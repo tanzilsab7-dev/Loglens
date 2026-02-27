@@ -1,0 +1,142 @@
+# app.py - Complete with Phase 2 Threat Detection
+from flask import Flask, request, jsonify, render_template, session
+import os
+import sys
+from datetime import datetime
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from parser.log_parser import LogParser
+from detector.threat_detector import ThreatDetector
+
+app = Flask(__name__)
+app.secret_key = 'loglens-secret-key-2026'
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    
+    if 'logfile' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['logfile']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    parser = LogParser(chunk_size=16384)
+    detector = ThreatDetector()
+    
+    parsed_lines = []
+    line_count = 0
+    alerts_count = 0
+    
+    try:
+        for parsed_line in parser.parse_file_stream(file.stream):
+            if parsed_line:
+                parsed_lines.append(parsed_line)
+                line_count += 1
+                
+                alerts = detector.analyze_log_entry(parsed_line)
+                if alerts:
+                    alerts_count += len(alerts)
+            
+            if line_count % 1000 == 0:
+                print(f"Processed {line_count} lines, Found {alerts_count} threats...")
+        
+        detection_report = detector.get_report()
+        
+        unique_ips = set()
+        status_codes = {}
+        methods = {}
+        
+        for line in parsed_lines:
+            if line:
+                if 'ip' in line:
+                    unique_ips.add(line['ip'])
+                
+                sc = str(line.get('status_code', 0))
+                status_codes[sc] = status_codes.get(sc, 0) + 1
+                
+                method = line.get('method', 'UNKNOWN')
+                methods[method] = methods.get(method, 0) + 1
+        
+        stats = {
+            'total_lines': line_count,
+            'unique_ips': len(unique_ips),
+            'status_codes': status_codes,
+            'methods': methods,
+            'total_alerts': alerts_count,
+            'critical_alerts': detection_report['summary']['detection_summary']['CRITICAL'],
+            'high_alerts': detection_report['summary']['detection_summary']['HIGH'],
+            'medium_alerts': detection_report['summary']['detection_summary']['MEDIUM']
+        }
+        
+        session['last_analysis'] = {
+            'stats': stats,
+            'detection': detection_report,
+            'preview': parsed_lines[:50],
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully processed {line_count} lines, found {alerts_count} threats',
+            'stats': stats,
+            'detection': detection_report,
+            'preview': parsed_lines[:50]
+        })
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/dashboard')
+def dashboard():
+    data = session.get('last_analysis', {})
+    return render_template('dashboard.html', data=data)
+
+@app.route('/alerts/<ip>')
+def get_ip_alerts(ip):
+    data = session.get('last_analysis', {})
+    detection = data.get('detection', {})
+    
+    ip_alerts = [
+        alert for alert in detection.get('recent_alerts', [])
+        if alert['source_ip'] == ip
+    ]
+    
+    return jsonify({
+        'ip': ip,
+        'total_alerts': len(ip_alerts),
+        'alerts': ip_alerts
+    })
+
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'phase': 'Phase 2 - Threat Detection',
+        'timestamp': datetime.now().isoformat()
+    })
+
+if __name__ == '__main__':
+    print("=" * 60)
+    print("LogLens Phase 2 - Threat Detection Engine")
+    print("=" * 60)
+    print("Server starting...")
+    print("Open browser and go to: http://localhost:5000")
+    print("Threat detection active with signatures:")
+    print("  - SQL Injection")
+    print("  - XSS Attacks")
+    print("  - Path Traversal")
+    print("  - Brute Force Detection")
+    print("  - Bot/Scanner Activity")
+    print("=" * 60)
+    app.run(debug=True, host='0.0.0.0', port=5000)

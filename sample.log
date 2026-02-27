@@ -1,0 +1,8 @@
+192.168.1.100 - - [24/Feb/2026:08:15:23 +0530] "GET /index.html HTTP/1.1" 200 2326 "https://google.com" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+192.168.1.101 - - [24/Feb/2026:08:16:45 +0530] "POST /api/login HTTP/1.1" 200 512 "-" "PostmanRuntime/7.26.8"
+192.168.1.102 - - [24/Feb/2026:08:17:12 +0530] "GET /admin.php?id=1%27%20OR%20%271%27%3D%271 HTTP/1.1" 200 1024 "-" "Mozilla/5.0"
+192.168.1.103 - - [24/Feb/2026:08:18:30 +0530] "GET /wp-admin HTTP/1.1" 404 256 "-" "Mozilla/5.0"
+192.168.1.100 - - [24/Feb/2026:08:19:45 +0530] "GET /images/logo.png HTTP/1.1" 200 45231 "https://example.com" "Mozilla/5.0"
+192.168.1.104 - - [24/Feb/2026:08:20:10 +0530] "GET /../../etc/passwd HTTP/1.1" 404 128 "-" "curl/7.68.0"
+192.168.1.105 - - [24/Feb/2026:08:21:55 +0530] "GET /css/style.css HTTP/1.1" 200 1250 "https://example.com" "Mozilla/5.0"
+192.168.1.101 - - [24/Feb/2026:08:22:20 +0530] "POST /api/data HTTP/1.1" 201 256 "-" "Python-requests/2.25.1"

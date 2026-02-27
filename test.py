@@ -1,0 +1,1 @@
+print("LogLens project started successfully!")
